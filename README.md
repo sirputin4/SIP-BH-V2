@@ -2,21 +2,23 @@
 
 Prototype application for a thesis project. Frontend: React + Vite. Authentication, PostgreSQL database, Row Level Security and private file storage: Supabase. Hosting: GitHub Pages.
 
+> **Terminologi antarmuka:** aplikasi menggunakan istilah **PBH (Pemberi Bantuan Hukum)** dan **Layanan Bantuan Hukum**. Untuk menjaga kompatibilitas dengan database yang sudah berjalan, nama tabel dan kolom internal seperti `obhs`, `obh_id`, dan alias `obh` tetap dipertahankan. Nama teknis tersebut tidak ditampilkan kepada pengguna.
+
 ## What is included
 
 ### Admin Kanwil
 - Overview dashboard with annual filter, organization accreditation, verified service statistics and regional distribution.
-- OBH master data: address, region, contact, accreditation status/year and active status.
-- Account approval for OBH users.
-- Beneficiary records and service registration for any OBH.
+- PBH master data: address, region, contact, accreditation status/year and active status.
+- Account approval for PBH users.
+- Beneficiary records and service registration for any PBH.
 - Service verification, revision request and rejection with an Admin note.
 - Service progress timeline.
 - Periodic report review (accept, request revision, reject).
 - Evaluation instrument with five configurable 1–5 criteria.
 - CSV exports for service data, beneficiary data and automatic service recap.
 
-### OBH
-- Registration with an existing active OBH directory entry; new account waits for Admin approval.
+### PBH
+- Registration with an existing active PBH directory entry; new account waits for Admin approval.
 - Organization profile and personnel/member directory.
 - Beneficiary registration.
 - Litigation service input: Perdata, Pidana, PTUN.
@@ -27,7 +29,7 @@ Prototype application for a thesis project. Frontend: React + Vite. Authenticati
 
 ## Important: migrate the existing Supabase project safely
 
-This project is designed to upgrade the V1 project without deleting the existing Admin account or OBH rows.
+This project is designed to upgrade the V1 project without deleting the existing Admin account or PBH rows.
 
 1. **Back up first.** In Supabase, make a database backup or export important tables before changing the schema.
 2. Open the existing Supabase project (the one currently used by SIP-BH V1).
@@ -39,7 +41,7 @@ This project is designed to upgrade the V1 project without deleting the existing
 
 ### Fresh Supabase project (only if starting from zero)
 
-1. Run `supabase/v1_base_schema.sql` first. This creates the original V1 tables and starter OBH rows.
+1. Run `supabase/v1_base_schema.sql` first. This creates the original V1 tables and starter PBH rows.
 2. Then run `supabase/migration_v2.sql`.
 3. Register an Admin email through the application, then promote it using the SQL below.
 
@@ -55,6 +57,23 @@ where p.id=u.id and u.email='admin@example.com';
 ```
 
 Sign out and sign in again after promoting the account.
+
+
+## Stage 2 — improved authentication and account management
+
+This release adds friendly login error messages, keeps public registration exclusively for PBH, and adds an Admin Kanwil account-management screen. Admin account creation is handled by a Supabase Edge Function; the service-role key is never sent to the browser.
+
+Before using **Manajemen Akun → Admin Kanwil → Tambah Admin**, deploy the function once. Follow `docs/STAGE-2-SETUP.md`. In short, from the project folder run:
+
+```bash
+supabase login
+supabase link --project-ref YOUR_SUPABASE_PROJECT_REF
+supabase functions deploy admin-user-management
+```
+
+The Edge Function uses Supabase's server-side `SUPABASE_SERVICE_ROLE_KEY` environment variable. Do not add this key to GitHub secrets or any `VITE_*` variable. Existing Admin and PBH accounts are retained.
+
+Public PBH registration still requires an active PBH selection. If Supabase email confirmation is enabled, the PBH must confirm their email and then wait for Admin approval. Admin accounts are created internally by an active Admin and are confirmed during secure server-side provisioning.
 
 ## Run locally on Windows
 
@@ -97,18 +116,18 @@ The Supabase publishable/anon key is intended to be used by browser clients when
 
 ## User roles and access model
 
-- Admin Kanwil can view/manage all OBH data, beneficiaries, services, progress, evaluations and reports.
-- OBH users can access records associated with their own `obh_id` only.
-- Both Admin and OBH can create service records. The `entry_source` and `created_by` fields identify who entered them.
+- Admin Kanwil can view/manage all PBH data, beneficiaries, services, progress, evaluations and reports.
+- PBH users can access records associated with their own `obh_id` only.
+- Both Admin and PBH can create service records. The `entry_source` and `created_by` fields identify who entered them.
 - Only Admin can verify/reject services, review periodic reports, and change accreditation status.
-- New OBH accounts remain pending until approved by Admin.
+- New PBH accounts remain pending until approved by Admin.
 - Storage bucket `sipbh-private` is private. Files are served through short-lived signed URLs.
 
 ## Data model overview
 
 `obhs` → `beneficiaries` → `assistance_services` → `service_progress`
 
-An OBH can have many beneficiaries. A beneficiary can have many assistance services. Each service can have many progress entries. Evaluations and reports are stored separately. See `docs/ARCHITECTURE.md`.
+A PBH can have many beneficiaries. A beneficiary can have many assistance services. Each service can have many progress entries. Evaluations and reports are stored separately. See `docs/ARCHITECTURE.md`.
 
 ## Privacy and academic-use cautions
 
@@ -123,5 +142,5 @@ An OBH can have many beneficiaries. A beneficiary can have many assistance servi
 
 - CSV exports open in Excel; native `.xlsx` and PDF report generation are not included in this build.
 - Evaluation scores are captured per service; the criteria should be validated before interpreting averages as official performance ratings.
-- Audit events are stored for service, progress, report and OBH changes; a dedicated audit-log viewer is not included in the current UI.
+- Audit events are stored for service, progress, report and PBH changes; a dedicated audit-log viewer is not included in the current UI.
 - Password reset UI, MFA, bulk import, advanced document preview and formal e-signature are not included.

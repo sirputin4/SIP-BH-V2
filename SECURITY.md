@@ -7,3 +7,7 @@
 5. Uploaded reports are stored in a private Supabase Storage bucket with a 10 MB limit.
 6. Back up the existing database before running the V2 migration.
 7. This prototype needs an institutional security and privacy review before any operational use.
+
+8. Admin account creation and listing are performed by the `admin-user-management` Supabase Edge Function. It validates the caller's JWT and requires an active Admin profile.
+9. Never expose `SUPABASE_SERVICE_ROLE_KEY` in frontend code, `.env` variables prefixed with `VITE_`, GitHub Pages artifacts, or repository files.
+10. Admin account deactivation sets the profile to a non-active status. Existing authenticated sessions may remain open in the browser, but RLS helpers require `account_status='active'` for Admin privileges.
